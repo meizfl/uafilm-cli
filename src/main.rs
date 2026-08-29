@@ -60,7 +60,9 @@ fn choose_index(n: usize, label: &str) -> Result<usize> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     if cli.list_providers {
-        println!("uaflix");
+        for p in providers::ALL_PROVIDERS {
+            println!("{p}");
+        }
         return Ok(());
     }
 
