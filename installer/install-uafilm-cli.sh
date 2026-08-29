@@ -8,7 +8,6 @@ BIN_LINK="/bin/uafilm-cli"
 DESKTOP_LINK="/usr/share/applications/uafilm-cli.desktop"
 
 REPO="meizfl/uafilm-cli"
-API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 
 SVG_CONTENT='<svg width="31" height="32" viewBox="0 0 31 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -51,20 +50,16 @@ die() {
 
 require_root() {
     if [[ $EUID -ne 0 ]]; then
-        die "this script must be run as root (e.g. sudo $0)"
+        die "this script must be run as root (e.g. sudo bash)"
     fi
 }
 
-remove() {
-    require_root
-
-    echo "Removing UaFilm CLI..."
-
-    rm -f "$BIN_LINK"
-    rm -f "$DESKTOP_LINK"
-    rm -rf "$INSTALL_DIR"
-
-    echo "UaFilm CLI has been successfully removed."
+get_latest_version() {
+    curl -fsSIL \
+        -o /dev/null \
+        -w '%{url_effective}' \
+        "https://github.com/${REPO}/releases/latest" |
+        sed 's#.*/tag/##'
 }
 
 install() {
@@ -76,11 +71,7 @@ install() {
     echo "Fetching the latest release..."
 
     local tag
-    tag="$(
-        curl -fsSL "$API_URL" |
-        sed -n 's/.*"tag_name": "\(.*\)",/\1/p' |
-        head -n1
-    )"
+    tag="$(get_latest_version)"
 
     [[ -n "$tag" ]] ||
         die "failed to determine the latest release"
@@ -125,8 +116,30 @@ install() {
     echo "Binary:  $INSTALL_DIR/uafilm-cli"
     echo "Command: $BIN_LINK"
     echo
+    echo "Desktop entry: $DESKTOP_LINK"
+    echo
     echo "To remove:"
-    echo "  sudo $0 --remove"
+    echo "  curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | sudo bash -s -- --remove"
+}
+
+remove() {
+    require_root
+
+    echo "Removing UaFilm CLI..."
+
+    if [[ -L "$BIN_LINK" || -e "$BIN_LINK" ]]; then
+        rm -f "$BIN_LINK"
+    fi
+
+    if [[ -L "$DESKTOP_LINK" || -e "$DESKTOP_LINK" ]]; then
+        rm -f "$DESKTOP_LINK"
+    fi
+
+    if [[ -d "$INSTALL_DIR" ]]; then
+        rm -rf "$INSTALL_DIR"
+    fi
+
+    echo "UaFilm CLI has been successfully removed."
 }
 
 main() {
