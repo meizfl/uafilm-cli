@@ -1,0 +1,27 @@
+[package]
+name = "uafilm-cli"
+version = "0.5.0"
+edition = "2021"
+description = "ASHDI Search — TMDB + scrapers + builtin player helper"
+license = "GNU/GPL3"
+rust-version = "1.74"
+build = "build.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.4", features = ["derive", "env"] }
+regex = "1"
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls", "gzip"] }
+scraper = "0.18"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+open = "5"
+# Auto-downloads a platform ffmpeg binary on first use (no system package needed)
+ffmpeg-sidecar = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = 3
