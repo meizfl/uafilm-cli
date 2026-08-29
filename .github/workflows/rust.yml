@@ -40,7 +40,7 @@ jobs:
             target: aarch64-pc-windows-msvc
             archive: zip
           - name: macos-x86_64
-            os: macos-26-intel
+            os: macos-14-intel
             target: x86_64-apple-darwin
             archive: tar.gz
           - name: macos-aarch64
