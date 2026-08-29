@@ -23,11 +23,13 @@ Default `--player auto`:
 ./target/release/uafilm-cli "Flower of Evil" --player auto
 ```
 
-> Pure-Rust H.264/HLS GUI player still is not practical. Sidecar ffmpeg is the reliable zero-install approach.
-
 ## Build
 
 ```bash
 TMDB_TOKEN='eyJ...' cargo build --release
 ./target/release/ashdi --help
+```
+## Install from GitHub(Linux)
+``` bash
+curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | bash
 ```
