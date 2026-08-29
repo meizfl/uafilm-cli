@@ -65,9 +65,9 @@ jobs:
         run: |
           cargo build --release --target ${{ matrix.target }}
           mkdir -p dist
-          BIN="ashdi"
+          BIN="uafilm-cli"
           if [[ "${{ matrix.target }}" == *windows* ]]; then
-            BIN="ashdi.exe"
+            BIN="uafilm-cli.exe"
           fi
           cp "target/${{ matrix.target }}/release/${BIN}" "dist/${BIN}"
           # checksum
@@ -80,7 +80,7 @@ jobs:
       - name: Pack archive
         shell: bash
         run: |
-          NAME="ashdi-${{ matrix.name }}"
+          NAME="uafilm-cli-${{ matrix.name }}"
           cd dist
           if [[ "${{ matrix.archive }}" == "zip" ]]; then
             7z a -tzip "../${NAME}.zip" ./*
@@ -93,7 +93,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ashdi-${{ matrix.name }}
+          name: uafilm-cli-${{ matrix.name }}
           path: ${{ env.ASSET }}
           if-no-files-found: error
 
