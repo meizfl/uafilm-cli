@@ -1,73 +1,126 @@
-name: Rust
+# Build release binaries for Linux / Windows / macOS
+# Triggers: tag v*, workflow_dispatch, push to main (artifacts only)
+
+name: Build
 
 on:
   push:
-    branches: ["main"]
+    branches: [main, master]
+    tags: ["v*"]
   pull_request:
-    branches: ["main"]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
+  # Optional: set repo secret TMDB_TOKEN to bake token into release binaries.
+  # Leave empty for builds without a baked-in key (runtime TMDB_TOKEN still works).
 
 jobs:
   build:
+    name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - name: linux-aarch64
+            os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+          - name: macos-x86_64
+            os: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - name: macos-aarch64
+            os: macos-14
+            target: aarch64-apple-darwin
+            archive: tar.gz
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-      # Linux зависимости
-      - name: Install system dependencies (Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release
+        shell: bash
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb1-dev \
-            libxcb-shm0-dev \
-            libxcb-randr0-dev \
-            libxcb-xfixes0-dev \
-            libx11-dev \
-            libwayland-dev \
-            libpipewire-0.3-dev \
-            libspa-0.2-dev \
-            libegl1-mesa-dev \
-            libgbm-dev \
-            pkg-config \
-            xvfb
+          cargo build --release --target ${{ matrix.target }}
+          mkdir -p dist
+          BIN="ashdi"
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            BIN="ashdi.exe"
+          fi
+          cp "target/${{ matrix.target }}/release/${BIN}" "dist/${BIN}"
+          # checksum
+          if command -v sha256sum >/dev/null; then
+            (cd dist && sha256sum "${BIN}" > "${BIN}.sha256")
+          else
+            (cd dist && shasum -a 256 "${BIN}" > "${BIN}.sha256")
+          fi
 
-      # Запуск Xvfb только на Linux
-      - name: Build (Linux with Xvfb)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Pack archive
+        shell: bash
         run: |
-          export DISPLAY=:99
-          Xvfb :99 -screen 0 1920x1080x24 &
-          cargo build --verbose
+          NAME="ashdi-${{ matrix.name }}"
+          cd dist
+          if [[ "${{ matrix.archive }}" == "zip" ]]; then
+            7z a -tzip "../${NAME}.zip" ./*
+            echo "ASSET=${NAME}.zip" >> "$GITHUB_ENV"
+          else
+            tar -czf "../${NAME}.tar.gz" ./*
+            echo "ASSET=${NAME}.tar.gz" >> "$GITHUB_ENV"
+          fi
 
-      # Обычный билд для остальных
-      - name: Build (non-Linux)
-        if: matrix.os != 'ubuntu-latest'
-        run: cargo build --verbose
-
-      - name: Run tests
-        run: cargo run
-
-      - name: Upload binary (Linux/macOS)
-        if: matrix.os != 'windows-latest'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gfetch-${{ matrix.os }}
-          path: target/debug/gfetch-rs
+          name: ashdi-${{ matrix.name }}
+          path: ${{ env.ASSET }}
+          if-no-files-found: error
 
-      - name: Upload binary (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: gfetch-${{ matrix.os }}
-          path: target/debug/gfetch-rs.exe
+          path: artifacts
+
+      - name: Flatten archives
+        shell: bash
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name '*.tar.gz' -o -name '*.zip' \) -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
