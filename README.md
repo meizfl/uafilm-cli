@@ -29,7 +29,12 @@ Default `--player auto`:
 TMDB_TOKEN='eyJ...' cargo build --release
 ./target/release/ashdi --help
 ```
-## Install from GitHub(Linux)
+## Install from GitHub (Linux)
 ``` bash
-curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | bash
+curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | sudo bash
 ```
+
+## Remove
+``` bash
+curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | sudo bash -s -- --remove```
+
