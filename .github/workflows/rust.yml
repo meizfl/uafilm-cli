@@ -35,6 +35,10 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             archive: zip
+          - name: windows-arm64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            archive: zip
           - name: macos-x86_64
             os: macos-13
             target: x86_64-apple-darwin
