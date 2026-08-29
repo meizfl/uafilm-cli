@@ -37,4 +37,5 @@ curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/i
 ## Remove
 ``` bash
 curl -fsSL https://raw.githubusercontent.com/meizfl/uafilm-cli/refs/heads/main/installer/install-uafilm-cli.sh | sudo bash -s -- --remove
-
+```
+The installer installs the program to /opt/uafilm-cli/ and creates symbolic links to /bin and /usr/share/applications/
