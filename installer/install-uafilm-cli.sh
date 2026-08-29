@@ -3,11 +3,12 @@
 set -euo pipefail
 
 APP_NAME="uafilm-cli"
+
 INSTALL_DIR="/opt/uafilm-cli"
 BIN_LINK="/bin/uafilm-cli"
 DESKTOP_LINK="/usr/share/applications/uafilm-cli.desktop"
 
-REPO="meizfl/uafilm-cli"
+DOWNLOAD_URL="https://github.com/meizfl/uafilm-cli/releases/latest/download/uafilm-cli-linux-amd64"
 
 SVG_CONTENT='<svg width="31" height="32" viewBox="0 0 31 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -54,39 +55,18 @@ require_root() {
     fi
 }
 
-get_latest_version() {
-    curl -fsSIL \
-        -o /dev/null \
-        -w '%{url_effective}' \
-        "https://github.com/${REPO}/releases/latest" |
-        sed 's#.*/tag/##'
-}
-
 install() {
     require_root
 
     command -v curl >/dev/null 2>&1 ||
         die "curl is not installed"
 
-    echo "Fetching the latest release..."
-
-    local tag
-    tag="$(get_latest_version)"
-
-    [[ -n "$tag" ]] ||
-        die "failed to determine the latest release"
-
-    echo "Latest release: $tag"
-
-    local download_url
-    download_url="https://github.com/${REPO}/releases/download/${tag}/uafilm-cli-linux-amd64"
-
-    echo "Downloading uafilm-cli..."
+    echo "Downloading the latest release..."
 
     mkdir -p "$INSTALL_DIR"
 
     curl -fL --progress-bar \
-        "$download_url" \
+        "$DOWNLOAD_URL" \
         -o "$INSTALL_DIR/uafilm-cli" ||
         die "failed to download uafilm-cli"
 
@@ -112,10 +92,8 @@ install() {
     echo " UaFilm CLI has been successfully installed!"
     echo "========================================"
     echo
-    echo "Version: $tag"
-    echo "Binary:  $INSTALL_DIR/uafilm-cli"
-    echo "Command: $BIN_LINK"
-    echo
+    echo "Binary:        $INSTALL_DIR/uafilm-cli"
+    echo "Command:       $BIN_LINK"
     echo "Desktop entry: $DESKTOP_LINK"
     echo
     echo "To remove:"
@@ -127,17 +105,9 @@ remove() {
 
     echo "Removing UaFilm CLI..."
 
-    if [[ -L "$BIN_LINK" || -e "$BIN_LINK" ]]; then
-        rm -f "$BIN_LINK"
-    fi
-
-    if [[ -L "$DESKTOP_LINK" || -e "$DESKTOP_LINK" ]]; then
-        rm -f "$DESKTOP_LINK"
-    fi
-
-    if [[ -d "$INSTALL_DIR" ]]; then
-        rm -rf "$INSTALL_DIR"
-    fi
+    rm -f "$BIN_LINK"
+    rm -f "$DESKTOP_LINK"
+    rm -rf "$INSTALL_DIR"
 
     echo "UaFilm CLI has been successfully removed."
 }
